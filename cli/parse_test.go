@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -516,5 +517,43 @@ func TestBodyArgs(t *testing.T) {
 		if !sameWords(bodyArgs, tc.varArgs) {
 			t.Errorf("BodyArgs parsed from %v are %v instead of %v", tc.cmd, bodyArgs, tc.varArgs)
 		}
+	}
+}
+
+//TODO:
+func TestLinkArgs(t *testing.T) {
+	root, err := ioutil.TempDir("", "cmds-link-test")
+	if err != nil {
+		t.Fatalf("cannot create symlink test root: %v", err)
+	}
+	defer os.RemoveAll(root)
+
+	realDir := filepath.Join(root, "RealDir")
+	dirLink := filepath.Join(root, "DirLink")
+	os.Mkdir(realDir, 0755)
+	err = os.Symlink(realDir, dirLink)
+	if err != nil {
+		t.Fatalf("cannot create symlink %q->%q: %v", dirLink, realDir, err)
+	}
+
+	dirArgs := &cmdkit.Argument{Type: cmdkit.ArgFile, Recursive: true}
+	linkArgs := &cmdkit.Argument{Type: cmdkit.ArgFile}
+
+	ld, err := appendFile(realDir, dirArgs, true, true, true)
+	if err != nil {
+		t.Fatalf("cannot append directory %q: %v", realDir, err)
+	}
+
+	if !ld.IsDirectory() {
+		t.Fatalf("symlink was not resolved when intended")
+	}
+
+	ld, err = appendFile(dirLink, linkArgs, true, true, false)
+	if err != nil {
+		t.Fatalf("cannot append link %q: %v", dirLink, err)
+	}
+
+	if ld.IsDirectory() {
+		t.Fatalf("symlink was resolved when not intended")
 	}
 }

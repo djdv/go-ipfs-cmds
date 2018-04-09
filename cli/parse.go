@@ -10,11 +10,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ipfs/go-ipfs-cmds"
-
 	osh "github.com/Kubuxu/go-os-helper"
 	"github.com/ipfs/go-ipfs-cmdkit"
 	"github.com/ipfs/go-ipfs-cmdkit/files"
+	"github.com/ipfs/go-ipfs-cmds"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -77,6 +76,16 @@ func isHidden(req *cmds.Request) bool {
 func isRecursive(req *cmds.Request) bool {
 	rec, ok := req.Options[cmds.RecLong].(bool)
 	return rec && ok
+}
+
+func resolveCommandLine(req *cmds.Request) bool {
+	linkOpt, ok := req.Options[cmds.DerefLong].(bool)
+	return linkOpt && ok
+}
+
+func resolveLinks(req *cmds.Request) bool {
+	linkOpt, ok := req.Options[cmds.DerefAllLong].(bool)
+	return linkOpt && ok
 }
 
 type parseState struct {
@@ -265,7 +274,14 @@ func parseArgs(req *cmds.Request, root *cmds.Command, stdin *os.File) error {
 					fpath = stdin.Name()
 					file = files.NewReaderFile("", fpath, r, nil)
 				} else {
-					nf, err := appendFile(fpath, argDef, isRecursive(req), isHidden(req))
+					if resolveCommandLine(req) {
+						var err error
+						fpath, err = filepath.EvalSymlinks(fpath)
+						if err != nil {
+							return err
+						}
+					}
+					nf, err := appendFile(fpath, argDef, isRecursive(req), isHidden(req), resolveLinks(req))
 					if err != nil {
 						return err
 					}
@@ -455,7 +471,7 @@ func getArgDef(i int, argDefs []cmdkit.Argument) *cmdkit.Argument {
 const notRecursiveFmtStr = "'%s' is a directory, use the '-%s' flag to specify directories"
 const dirNotSupportedFmtStr = "Invalid path '%s', argument '%s' does not support directories"
 
-func appendFile(fpath string, argDef *cmdkit.Argument, recursive, hidden bool) (files.File, error) {
+func appendFile(fpath string, argDef *cmdkit.Argument, recursive, hidden bool, resolveDepth int) (files.File, error) {
 	if fpath == "." {
 		cwd, err := os.Getwd()
 		if err != nil {
@@ -484,7 +500,7 @@ func appendFile(fpath string, argDef *cmdkit.Argument, recursive, hidden bool) (
 		}
 	}
 
-	return files.NewSerialFile(path.Base(fpath), fpath, hidden, stat)
+	return files.NewSerialFile(path.Base(fpath), fpath, hidden, stat, resolveDepth)
 }
 
 // Inform the user if a file is waiting on input
