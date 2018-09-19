@@ -23,5 +23,5 @@ var OptionEncodingType = cmdkit.StringOption(EncLong, EncShort, "The encoding ty
 var OptionRecursivePath = cmdkit.BoolOption(RecLong, RecShort, "Add directory paths recursively").WithDefault(false)
 var OptionStreamChannels = cmdkit.BoolOption(ChanOpt, "Stream channel output")
 var OptionTimeout = cmdkit.StringOption(TimeoutOpt, "Set a global timeout on the command")
-var OptionDerefArgs = cmdkit.BoolOption(DerefLong, "Resolve link arguments instead of adding them as links").WithDefault(false)
-var OptionDerefAll = cmdkit.BoolOption(DerefAllLong, "Resolve links instead of adding them as links").WithDefault(false)
+var OptionDerefArgs = cmdkit.BoolOption(DerefLong, "Resolve link arguments, instead of adding links as links").WithDefault(false)
+var OptionDerefAll = cmdkit.BoolOption(DerefAllLong, "Resolve all links, instead of adding links as links").WithDefault(false)
